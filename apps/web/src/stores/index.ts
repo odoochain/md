@@ -27,6 +27,7 @@ import {
   renderMarkdown,
   sanitizeTitle,
 } from '@/utils'
+import { backupEditorData, exportPosts, getStorageStats, importPosts, restoreEditorData } from '@/utils/backup'
 import { copyPlain } from '@/utils/clipboard'
 
 /**********************************
@@ -683,6 +684,61 @@ export const useStore = defineStore(`store`, () => {
     isOpenConfirmDialog.value = true
   }
 
+  // 备份所有数据
+  const backupAllData = () => {
+    try {
+      backupEditorData()
+      toast.success(`数据备份成功！`)
+    }
+    catch (error) {
+      console.error(`备份失败:`, error)
+      toast.error(`数据备份失败`)
+    }
+  }
+
+  // 恢复数据
+  const restoreAllData = (file: File, options?: { clearExisting?: boolean }) => {
+    return restoreEditorData(file, options)
+      .then(() => {
+        toast.success(`数据恢复成功！`)
+      })
+      .catch((error) => {
+        console.error(`恢复失败:`, error)
+        toast.error(`数据恢复失败: ${error.message}`)
+        throw error
+      })
+  }
+
+  // 导出文章数据
+  const exportPostsData = (postIds?: string[]) => {
+    try {
+      exportPosts(postIds)
+      toast.success(`文章导出成功！`)
+    }
+    catch (error) {
+      console.error(`导出失败:`, error)
+      toast.error(`文章导出失败`)
+    }
+  }
+
+  // 导入文章数据
+  const importPostsData = (file: File, mode: `merge` | `replace` = `merge`) => {
+    return importPosts(file, mode)
+      .then(() => {
+        toast.success(`文章导入成功！`)
+      })
+      .catch((error) => {
+        console.error(`导入失败:`, error)
+        toast.error(`文章导入失败: ${error.message}`)
+        throw error
+      })
+  }
+
+  // 获取存储统计
+  const getStorageStatistics = () => {
+    return getStorageStats()
+  }
+
   return {
     isDark,
     toggleDark,
@@ -745,6 +801,13 @@ export const useStore = defineStore(`store`, () => {
     isOpenConfirmDialog,
     resetStyleConfirm,
     resetStyle,
+
+    // 数据备份恢复功能
+    backupAllData,
+    restoreAllData,
+    exportPostsData,
+    importPostsData,
+    getStorageStatistics,
 
     cssContentConfig,
     addCssContentTab,
