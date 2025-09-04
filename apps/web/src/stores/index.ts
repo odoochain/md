@@ -697,7 +697,13 @@ export const useStore = defineStore(`store`, () => {
   }
 
   // 恢复数据
-  const restoreAllData = (file: File, options?: { clearExisting?: boolean }) => {
+  const restoreAllData = (
+    file: File,
+    options?: {
+      clearExisting?: boolean
+      onConfirm?: (message: string) => Promise<boolean>
+    },
+  ) => {
     return restoreEditorData(file, options)
       .then(() => {
         toast.success(`数据恢复成功！`)

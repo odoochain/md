@@ -19,12 +19,15 @@ const {
 
 const editorStateDialogVisible = ref(false)
 const restoreConfirmDialogVisible = ref(false)
+const reloadConfirmDialogVisible = ref(false)
+const restoreConfirmMessage = ref(``)
+const reloadConfirmMessage = ref(``)
+let currentRestoreResolve: ((value: boolean) => void) | null = null
+let currentReloadResolve: ((value: boolean) => void) | null = null
 
 const importMarkdownContent = useImportMarkdownContent()
 
 // 数据恢复功能
-let pendingRestoreFile: File | null = null
-
 function triggerDataRestore() {
   // 创建隐藏的文件输入框
   const input = document.createElement(`input`)
@@ -35,8 +38,7 @@ function triggerDataRestore() {
   input.onchange = (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0]
     if (file) {
-      pendingRestoreFile = file
-      restoreConfirmDialogVisible.value = true
+      handleFileRestore(file)
     }
     document.body.removeChild(input)
   }
@@ -45,12 +47,65 @@ function triggerDataRestore() {
   input.click()
 }
 
+// 创建确认回调函数
+function createConfirmCallback() {
+  return (message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (message.includes(`刷新页面`)) {
+        reloadConfirmMessage.value = message
+        currentReloadResolve = resolve
+        reloadConfirmDialogVisible.value = true
+      }
+      else {
+        restoreConfirmMessage.value = message
+        currentRestoreResolve = resolve
+        restoreConfirmDialogVisible.value = true
+      }
+    })
+  }
+}
+
+async function handleFileRestore(file: File) {
+  try {
+    await store.restoreAllData(file, {
+      onConfirm: createConfirmCallback(),
+    })
+  }
+  catch (error: any) {
+    console.error(`恢复失败:`, error)
+  }
+}
+
 function handleRestoreConfirm() {
-  if (pendingRestoreFile) {
-    store.restoreAllData(pendingRestoreFile)
-    pendingRestoreFile = null
+  if (currentRestoreResolve) {
+    currentRestoreResolve(true)
+    currentRestoreResolve = null
   }
   restoreConfirmDialogVisible.value = false
+}
+
+function handleRestoreCancel() {
+  if (currentRestoreResolve) {
+    currentRestoreResolve(false)
+    currentRestoreResolve = null
+  }
+  restoreConfirmDialogVisible.value = false
+}
+
+function handleReloadConfirm() {
+  if (currentReloadResolve) {
+    currentReloadResolve(true)
+    currentReloadResolve = null
+  }
+  reloadConfirmDialogVisible.value = false
+}
+
+function handleReloadCancel() {
+  if (currentReloadResolve) {
+    currentReloadResolve(false)
+    currentReloadResolve = null
+  }
+  reloadConfirmDialogVisible.value = false
 }
 </script>
 
@@ -118,15 +173,35 @@ function handleRestoreConfirm() {
       <AlertDialogHeader>
         <AlertDialogTitle>确认恢复数据</AlertDialogTitle>
         <AlertDialogDescription>
-          确定要恢复数据吗？这将覆盖当前所有设置和数据。
+          {{ restoreConfirmMessage }}
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel @click="restoreConfirmDialogVisible = false">
+        <AlertDialogCancel @click="handleRestoreCancel">
           取消
         </AlertDialogCancel>
         <AlertDialogAction @click="handleRestoreConfirm">
           确认恢复
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
+  <!-- 刷新页面确认对话框 -->
+  <AlertDialog v-model:open="reloadConfirmDialogVisible">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>确认刷新页面</AlertDialogTitle>
+        <AlertDialogDescription>
+          {{ reloadConfirmMessage }}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel @click="handleReloadCancel">
+          取消
+        </AlertDialogCancel>
+        <AlertDialogAction @click="handleReloadConfirm">
+          立即刷新
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
