@@ -1,3 +1,18 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - apps/*
+  - packages/*
+
+ignoredBuiltDependencies:
+  - '@parcel/watcher'
+  - '@vscode/vsce-sign'
+  - core-js
+  - core-js-pure
+  - cos-js-sdk-v5
+  - esbuild
+  - keytar
+  - postinstall-postinstall
+  - sharp
+  - simple-git-hooks
+  - spawn-sync
+  - vue-demi
+  - workerd
